@@ -186,6 +186,7 @@ grammar =
   # of **Block** preceded by a function arrow, with an optional parameter
   # list.
   Code: [
+    o 'ASYNC PARAM_START ParamList PARAM_END FuncGlyph Block', -> new Code $3, $6, $5, $1
     o 'PARAM_START ParamList PARAM_END FuncGlyph Block', -> new Code $2, $5, $4
     o 'FuncGlyph Block',                        -> new Code [], $2, $1
   ]
@@ -310,6 +311,7 @@ grammar =
 
   # Ordinary function invocation, or a chained series of calls.
   Invocation: [
+    o 'AWAIT Value OptFuncExist Arguments',     -> new Call $2, $4, $3, $1
     o 'Value OptFuncExist Arguments',           -> new Call $1, $3, $2
     o 'Invocation OptFuncExist Arguments',      -> new Call $1, $3, $2
     o 'SUPER',                                  -> new Call 'super', [new Splat new Literal 'arguments']
@@ -583,6 +585,8 @@ operators = [
   ['nonassoc',  '++', '--']
   ['left',      '?']
   ['right',     'UNARY']
+  ['right',     'ASYNC']
+  ['right',     'AWAIT']
   ['left',      'MATH']
   ['left',      '+', '-']
   ['left',      'SHIFT']

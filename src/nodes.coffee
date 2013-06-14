@@ -564,10 +564,11 @@ exports.Comment = class Comment extends Base
 # Node for a function invocation. Takes care of converting `super()` calls into
 # calls against the prototype's function of the same name.
 exports.Call = class Call extends Base
-  constructor: (variable, @args = [], @soak) ->
+  constructor: (variable, @args = [], @soak, type) ->
     @isNew    = false
     @isSuper  = variable is 'super'
     @variable = if @isSuper then null else variable
+    @await    = type is 'await'
 
   children: ['variable', 'args']
 
@@ -643,6 +644,8 @@ exports.Call = class Call extends Base
       compiledArgs.push (arg.compileToFragments o, LEVEL_LIST)...
 
     fragments = []
+    if @await
+      fragments.push @makeCode 'yield '
     if @isSuper
       preface = @superReference(o) + ".call(#{@superThis(o)}"
       if compiledArgs.length then preface += ", "
@@ -1269,11 +1272,12 @@ exports.Assign = class Assign extends Base
 # When for the purposes of walking the contents of a function body, the Code
 # has no *children* -- they're within the inner scope.
 exports.Code = class Code extends Base
-  constructor: (params, body, tag) ->
+  constructor: (params, body, tag, type) ->
     @params  = params or []
     @body    = body or new Block
     @bound   = tag is 'boundfunc'
     @context = '_this' if @bound
+    @async   = type is 'async'
 
   children: ['params', 'body']
 
@@ -1333,6 +1337,7 @@ exports.Code = class Code extends Base
         o.scope.parent.assign '_this', 'this'
     idt   = o.indent
     code  = 'function'
+    code  += '*' if @async
     code  += ' ' + @name if @ctor
     code  += '('
     answer = [@makeCode(code)]
